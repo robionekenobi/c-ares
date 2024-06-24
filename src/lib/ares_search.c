@@ -25,15 +25,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "ares_setup.h"
+#include "ares_private.h"
 
 #ifdef HAVE_STRINGS_H
 #  include <strings.h>
 #endif
-
-#include "ares.h"
-#include "ares_private.h"
-#include "ares_dns.h"
 
 struct search_query {
   /* Arguments passed to ares_search_dnsrec() */
@@ -97,7 +93,7 @@ static ares_status_t ares_search_next(ares_channel_t      *channel,
   }
 
   status =
-    ares_send_dnsrec(channel, squery->dnsrec, search_callback, squery, NULL);
+    ares_send_nolock(channel, squery->dnsrec, search_callback, squery, NULL);
 
   if (status != ARES_EFORMERR) {
     *skip_cleanup = ARES_TRUE;

@@ -23,7 +23,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#include "ares_setup.h"
+#include "ares_private.h"
 
 #ifdef HAVE_GETSERVBYPORT_R
 #  if !defined(GETSERVBYPORT_R_ARGS) || (GETSERVBYPORT_R_ARGS < 4) || \
@@ -51,9 +51,7 @@
 #  include <iphlpapi.h>
 #endif
 
-#include "ares.h"
 #include "ares_ipv6.h"
-#include "ares_private.h"
 
 struct nameinfo_query {
   ares_nameinfo_callback callback;
@@ -173,14 +171,15 @@ static void  ares_getnameinfo_int(ares_channel_t        *channel,
       if (sa->sa_family == AF_INET) {
         niquery->family = AF_INET;
         memcpy(&niquery->addr.addr4, addr, sizeof(niquery->addr.addr4));
-        ares_gethostbyaddr(channel, &addr->sin_addr, sizeof(struct in_addr),
-                           AF_INET, nameinfo_callback, niquery);
+        ares_gethostbyaddr_nolock(channel, &addr->sin_addr,
+                                  sizeof(struct in_addr), AF_INET,
+                                  nameinfo_callback, niquery);
       } else {
         niquery->family = AF_INET6;
         memcpy(&niquery->addr.addr6, addr6, sizeof(niquery->addr.addr6));
-        ares_gethostbyaddr(channel, &addr6->sin6_addr,
-                           sizeof(struct ares_in6_addr), AF_INET6,
-                           nameinfo_callback, niquery);
+        ares_gethostbyaddr_nolock(channel, &addr6->sin6_addr,
+                                  sizeof(struct ares_in6_addr), AF_INET6,
+                                  nameinfo_callback, niquery);
       }
     }
   }
@@ -411,8 +410,8 @@ static char *ares_striendstr(const char *s1, const char *s2)
   c1       = c1_begin;
   c2       = s2;
   while (c2 < s2 + s2_len) {
-    lo1 = TOLOWER(*c1);
-    lo2 = TOLOWER(*c2);
+    lo1 = ares__tolower((unsigned char)*c1);
+    lo2 = ares__tolower((unsigned char)*c2);
     if (lo1 != lo2) {
       return NULL;
     } else {

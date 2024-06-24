@@ -33,14 +33,12 @@
 #define HAVE_UNISTD_H            1
 #define HAVE_WRITEV              1
 #define HAVE_STAT                1
-
-#define NEED_MALLOC_H 1
+#define HAVE_MALLOC_H            1
 
 /* Qualifiers for send(), recv(), recvfrom() and getnameinfo(). */
 
 #define SEND_TYPE_ARG1 int
-#define SEND_QUAL_ARG2 const
-#define SEND_TYPE_ARG2 void *
+#define SEND_TYPE_ARG2 const void *
 #define SEND_TYPE_ARG3 int
 #define SEND_TYPE_ARG4 int
 #define SEND_TYPE_RETV int

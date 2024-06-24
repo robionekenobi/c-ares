@@ -23,8 +23,6 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#include "ares_setup.h"
-#include "ares.h"
 #include "ares_private.h"
 #include "ares_event.h"
 
@@ -274,16 +272,19 @@ static void *ares_event_thread(void *arg)
     const struct timeval *tvout;
     unsigned long         timeout_ms = 0; /* 0 = unlimited */
 
+    ares_event_process_updates(e);
+
+    /* Don't hold a mutex while waiting on events or calling into anything
+     * that might require a c-ares channel lock since a callback could be
+     * triggered cross-thread */
+    ares__thread_mutex_unlock(e->mutex);
+
     tvout = ares_timeout(e->channel, NULL, &tv);
     if (tvout != NULL) {
       timeout_ms =
         (unsigned long)((tvout->tv_sec * 1000) + (tvout->tv_usec / 1000) + 1);
     }
 
-    ares_event_process_updates(e);
-
-    /* Don't hold a mutex while waiting on events */
-    ares__thread_mutex_unlock(e->mutex);
     e->ev_sys->wait(e, timeout_ms);
 
     /* Each iteration should do timeout processing */
