@@ -25,9 +25,13 @@
  */
 
 /* Uses an anonymous union */
-#if defined(__clang__)
+#if defined(__clang__) || defined(__GNUC__)
 #  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Wc11-extensions"
+#  if defined(__clang__)
+#    pragma GCC diagnostic ignored "-Wc11-extensions"
+#  else
+#    pragma GCC diagnostic ignored "-Wpedantic"
+#  endif
 #endif
 
 #include "ares_private.h"
@@ -337,7 +341,9 @@ typedef struct {
 static void ares_afd_handle_destroy(void *arg)
 {
   ares_afd_handle_t *hnd = arg;
-  CloseHandle(hnd->afd_handle);
+  if (hnd != NULL && hnd->afd_handle != NULL) {
+    CloseHandle(hnd->afd_handle);
+  }
   ares_free(hnd);
 }
 
@@ -791,7 +797,11 @@ static void ares_evsys_win32_event_mod(ares_event_t      *event,
 static ares_bool_t ares_evsys_win32_process_other_event(
   ares_evsys_win32_t *ew, ares_evsys_win32_eventdata_t *ed, size_t i)
 {
-  ares_event_t *event = ed->event;
+  ares_event_t *event;
+
+  /* NOTE: do NOT dereference 'ed' if during shutdown as this could be an
+   * invalid pointer if the signal handle was cleaned up, but there was still a
+   * pending event! */
 
   if (ew->is_shutdown) {
     CARES_DEBUG_LOG("\t\t** i=%lu, skip non-socket handle during shutdown\n",
@@ -799,6 +809,7 @@ static ares_bool_t ares_evsys_win32_process_other_event(
     return ARES_FALSE;
   }
 
+  event = ed->event;
   CARES_DEBUG_LOG("\t\t** i=%lu, ed=%p (data)\n", (unsigned long)i, (void *)ed);
 
   event->cb(event->e, event->fd, event->data, ARES_EVENT_FLAG_OTHER);
@@ -960,6 +971,6 @@ const ares_event_sys_t ares_evsys_win32 = { "win32",
                                             ares_evsys_win32_wait };
 #endif
 
-#if defined(__clang__)
+#if defined(__clang__) || defined(__GNUC__)
 #  pragma GCC diagnostic pop
 #endif
