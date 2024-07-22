@@ -78,6 +78,40 @@ TEST_P(MockUDPEventThreadTest, GetHostByNameParallelLookups) {
   EXPECT_EQ("{'www.google.com' aliases=[] addrs=[2.3.4.5]}", ss3.str());
 }
 
+// c-ares issue #819
+TEST_P(MockUDPEventThreadTest, BadLoopbackServerNoTimeouts) {
+  ares_set_servers_csv(channel_, "127.0.0.1:12345");
+#define BADLOOPBACK_TESTCNT 5
+  HostResult result[BADLOOPBACK_TESTCNT];
+  for (size_t i=0; i<BADLOOPBACK_TESTCNT; i++) {
+    ares_gethostbyname(channel_, "www.google.com.", AF_UNSPEC, HostCallback, &result[i]);
+  }
+  Process();
+  for (size_t i=0; i<BADLOOPBACK_TESTCNT; i++) {
+    EXPECT_TRUE(result[i].done_);
+
+    /* This test relies on the ICMP unreachable packet coming back on UDP connections
+     * when there is no listener on the other end.  Most OS's handle this properly,
+     * but not all.  For instance, Solaris 11 seems to not be compliant (it
+     * does however honor it sometimes, just not always) so while we still run
+     * the test, we don't do a strict validation of the result.
+     *
+     * Windows also appears to have intermittent issues, AppVeyor fails but GitHub Actions
+     * succeeds, which seems strange.  This test goes to loopback so the network
+     * it resides on shouldn't matter.
+     *
+     * This test is really just testing an optimization, UDP is connectionless so you
+     * should expect most connections to rely on timeouts and not ICMP unreachable.
+     */
+# if defined(__sun) || defined(_WIN32)
+    EXPECT_TRUE(result[i].status_ == ARES_ECONNREFUSED || result[i].status_ == ARES_ETIMEOUT || result[i].status_ == ARES_ESERVFAIL);
+# else
+    EXPECT_EQ(ARES_ECONNREFUSED, result[i].status_);
+    EXPECT_EQ(0, result[i].timeouts_);
+#endif
+  }
+}
+
 // UDP to TCP specific test
 TEST_P(MockUDPEventThreadTest, TruncationRetry) {
   DNSPacket rsptruncated;
@@ -374,7 +408,7 @@ TEST_P(MockTCPEventThreadTest, MalformedResponse) {
   ares_gethostbyname(channel_, "www.google.com.", AF_INET, HostCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
-  EXPECT_EQ(ARES_ETIMEOUT, result.status_);
+  EXPECT_EQ(ARES_EBADRESP, result.status_);
 }
 
 TEST_P(MockTCPEventThreadTest, FormErrResponse) {
