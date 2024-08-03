@@ -876,6 +876,8 @@ TEST_P(MockChannelTest, SearchDomainsBare) {
   ares_gethostbyname(channel_, "www", AF_INET, HostCallback, &result);
   Process();
   EXPECT_TRUE(result.done_);
+  EXPECT_EQ(0, result.timeouts_);
+
   std::stringstream ss;
   ss << result.host_;
   EXPECT_EQ("{'www' aliases=[] addrs=[2.3.4.5]}", ss.str());
@@ -2006,15 +2008,10 @@ TEST_P(NoRotateMultiMockTest, ServerNoResponseFailover) {
   EXPECT_EQ("{'www.example.com' aliases=[] addrs=[2.3.4.5]}", ss4.str());
 }
 
-#ifdef __APPLE__
-/* Apple's sleep is no where near accurate, especially on a heavily loaded
- * system.  Its possible we could set a realtime priority on a thread to
- * help with this, but for now, just increase the delay */
-#  define SERVER_FAILOVER_RETRY_DELAY 750
-#elif defined(_WIN32)
+#if defined(_WIN32)
 #  define SERVER_FAILOVER_RETRY_DELAY 500
 #else
-#  define SERVER_FAILOVER_RETRY_DELAY 250
+#  define SERVER_FAILOVER_RETRY_DELAY 330
 #endif
 class ServerFailoverOptsMultiMockTest : public MockMultiServerChannelTest {
  public:
