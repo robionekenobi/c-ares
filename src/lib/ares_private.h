@@ -410,7 +410,7 @@ struct ares_channeldata {
   const struct ares_socket_functions *sock_funcs;
   void                               *sock_func_cb_data;
 
-  ares_notify_pending_write_callback  notify_pending_write_cb;
+  ares_pending_write_cb               notify_pending_write_cb;
   void                               *notify_pending_write_cb_data;
   ares_bool_t                         notify_pending_write;
 
@@ -674,11 +674,11 @@ ares_status_t   ares__sconfig_append(ares__llist_t         **sconfig,
 ares_status_t   ares__sconfig_append_fromstr(ares__llist_t **sconfig,
                                              const char     *str,
                                              ares_bool_t     ignore_invalid);
-ares_status_t ares_in_addr_to_server_config_llist(const struct in_addr *servers,
-                                                  size_t          nservers,
-                                                  ares__llist_t **llist);
-ares_status_t ares_get_server_addr(const ares_server_t *server,
-                                   ares__buf_t         *buf);
+ares_status_t   ares_in_addr_to_sconfig_llist(const struct in_addr *servers,
+                                              size_t                nservers,
+                                              ares__llist_t       **llist);
+ares_status_t   ares_get_server_addr(const ares_server_t *server,
+                                     ares__buf_t         *buf);
 
 struct ares_hosts_entry;
 typedef struct ares_hosts_entry ares_hosts_entry_t;
