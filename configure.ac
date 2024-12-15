@@ -2,10 +2,10 @@ dnl Copyright (C) The c-ares project and its contributors
 dnl SPDX-License-Identifier: MIT
 AC_PREREQ([2.69])
 
-AC_INIT([c-ares], [1.34.3],
+AC_INIT([c-ares], [1.34.4],
   [c-ares mailing list: http://lists.haxx.se/listinfo/c-ares])
 
-CARES_VERSION_INFO="21:2:19"
+CARES_VERSION_INFO="21:3:19"
 dnl This flag accepts an argument of the form current[:revision[:age]]. So,
 dnl passing -version-info 3:12:1 sets current to 3, revision to 12, and age to
 dnl 1.
@@ -247,18 +247,21 @@ if test "$enable_warnings" = "yes"; then
     [AM_CFLAGS], [-Werror])
 fi
 
-dnl Android requires c99, QNX requires gnu90, all others should use c90
+dnl Android and QNX require c99, all others should use c90
 case $host_os in
-  *qnx*)
-    AX_APPEND_COMPILE_FLAGS([-std=gnu90], [AM_CFLAGS], [-Werror])
-    AX_APPEND_COMPILE_FLAGS([-D_QNX_SOURCE], [AM_CPPFLAGS], [-Werror])
-    ;;
-  *android*)
+  *qnx*|*android*)
     AX_APPEND_COMPILE_FLAGS([-std=c99], [AM_CFLAGS], [-Werror])
     ;;
   *)
     AX_APPEND_COMPILE_FLAGS([-std=c90], [AM_CFLAGS], [-Werror])
     ;;
+esac
+
+dnl QNX needs -D_QNX_SOURCE
+case $host_os in
+  *qnx*)
+    AX_APPEND_COMPILE_FLAGS([-D_QNX_SOURCE], [AM_CPPFLAGS], [-Werror])
+  ;;
 esac
 
 if test "$ax_cv_c_compiler_vendor" = "intel"; then
